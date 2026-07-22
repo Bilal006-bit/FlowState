@@ -1,82 +1,66 @@
-# Flowstate
+# FlowState 🌊
 
-Flowstate is a lightweight, local-first developer flow manager designed for developers who heavily use AI coding tools (Cursor, Claude Desktop, Antigravity, Windsurf, Codex, etc.). 
+FlowState is a **local-first, privacy-focused open-source developer flow manager** designed specifically for engineers who heavily use AI coding tools (like Cursor, Claude Desktop, and ChatGPT). 
 
-It helps you reduce context switching, enforce your personal coding style, save tokens by providing compressed context, and keep your git history clean—all entirely locally and offline.
+It acts as an active "Junior Engineer" running in the background, automatically cleaning up AI hallucinations, managing your technical debt, and compressing your codebase context to save you massive amounts of API tokens.
 
-## Why Flowstate?
-AI coding tools are amazing, but they often lead to:
-- **Token Waste**: Re-explaining your project structure or coding style.
-- **Context Loss**: Losing track of what you were doing when switching tools.
-- **Messy Git History**: Committing large blocks of AI-generated code with poor commit messages.
-- **Verbose Comments**: AI generating unnecessary, long-winded comments.
+## 🚀 Features
 
-**Flowstate solves this by running entirely locally on your machine.**
+### 🧹 The Auto-Cleaner (Anti-Hallucination)
+AI tools love to write huge, unnecessary comments explaining every line of code. FlowState intercepts your saves in real-time. Whenever you hit `Ctrl+S`, FlowState instantly strips out the hallucinated AI fluff in milliseconds, keeping your git history and codebase perfectly clean.
 
-## Installation
+### 🧠 Auto-Context Optimizer (Token Saver)
+Stop wasting money and context windows by pasting unoptimized code. FlowState maintains a local ChromaDB vector memory of your project architecture. Every time you save, it silently recalculates the absolute smallest, perfectly optimized context block and can copy it to your clipboard.
 
-Flowstate requires Python 3.11+.
+### 📦 The Codebase Packer
+Working on a complex architectural bug? Run `flowstate pack` (or click a button in the UI). FlowState will recursively read your entire project, ignore junk like `.git` and `node_modules`, format it beautifully, and copy it to your clipboard so you can feed it to Claude instantly.
+
+### 📋 TODO & FIXME Extractor
+Never lose track of your technical debt. FlowState scans your entire project in milliseconds and gives you a beautiful dashboard of every `TODO:` and `FIXME:` marker you left behind, including the file path and line number.
+
+### 📝 Smart Git Changelog
+Stop writing PR descriptions manually. FlowState analyzes your `git diff` against the main branch and uses your configured LLM API (OpenAI, Anthropic, or Gemini) to write a stunning, markdown-formatted changelog detailing the "why" and "how" of your code.
+
+---
+
+## 🛠️ Installation
+
+Because FlowState is designed to be lightweight, it runs perfectly on Windows, Mac, and Linux without heavy C/Rust dependencies.
 
 ```bash
-git clone <your-repo>/flowstate
-cd flowstate
+# Clone the repository
+git clone https://github.com/Bilal006-bit/FlowState.git
+cd FlowState
+
+# Install globally in editable mode
 pip install -e .
 ```
 
-## Usage
+---
 
-### 1. Start a Session
-Create a smart git branch, load project memory, and open a session notes file:
+## 💻 Usage
+
+You have two ways to use FlowState: the sleek Desktop UI or the lightning-fast CLI.
+
+### The Desktop GUI
+Run this command from anywhere in your terminal to open the FlowState Dashboard:
 ```bash
-flowstate start "feat/user-auth"
+flowstate ui
 ```
+*From the UI, you can manage your settings, run the Auto-Cleaner daemon, pack your codebase, and view your project's technical debt.*
 
-### 2. During Coding
-Copy your personal AI prompt style to your clipboard to paste into any tool:
-```bash
-flowstate style
-```
+### The CLI Commands
+- `flowstate watch` - Starts the active background daemon to auto-clean files on save.
+- `flowstate pack` - Packs your entire project into your clipboard.
+- `flowstate todos` - Extracts and displays all TODOs in the terminal.
+- `flowstate style` - Copies your custom AI coding style prompt to your clipboard.
+- `flowstate clean <file>` - Manually strips AI fluff from a specific file.
+- `flowstate start <branch-name>` - Initializes a smart git branch and session notes.
+- `flowstate finish` - Generates a PR description.
 
-Clean up excessive AI comments intelligently (AST-based for Python, Regex for others):
-```bash
-flowstate clean my_file.py
-```
+---
 
-Run in the background to automatically monitor file saves and provide notifications (offline):
-```bash
-flowstate watch
-```
+## 🤝 Contributing & How Changes are Accepted
 
-### 3. Commit
-Commit your changes with a generated conventional commit message, using your real human identity:
-```bash
-flowstate commit "Optional additional context"
-```
-
-### 4. Pause & Resume
-Save your current context and restore it later:
-```bash
-flowstate pause
-flowstate resume
-```
-
-### 5. Finish
-Generate a high-quality PR description in your style:
-```bash
-flowstate finish
-```
-
-### 6. Status
-Check your current status, active branch, and session memory:
-```bash
-flowstate status
-```
-
-## Features
-- **100% Local & Offline**: Uses SQLite and ChromaDB locally on your machine.
-- **Background Autonomous Mode**: Run `flowstate watch` for autonomous background notifications.
-- **AI Comment Cleaner**: Intelligently cleans AI-generated fluff.
-- **Style Enforcement**: Persistent memory of how you like to code.
-
-## License
-MIT
+FlowState is completely open-source and we welcome contributions from the community! 
+Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for full details on how to get your changes merged.
