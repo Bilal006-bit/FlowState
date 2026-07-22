@@ -15,6 +15,12 @@ Stop wasting money and context windows by pasting unoptimized code. FlowState ma
 ### 📦 The Codebase Packer
 Working on a complex architectural bug? Run `flowstate pack` (or click a button in the UI). FlowState will recursively read your entire project, ignore junk like `.git` and `node_modules`, format it beautifully, and copy it to your clipboard so you can feed it to Claude instantly.
 
+### 🤖 Local Project AI Chatbot
+Stop copying and pasting files to ChatGPT. FlowState features a built-in Chat tab that intuitively knows your entire codebase. When you ask it a question (e.g., "how does the login work?" or "write a new user dashboard"), it silently searches your project's local ChromaDB, pulls the exact architectural files, injects your tech stack and style guidelines, and gives you a perfectly tailored answer using your configured API.
+
+### 🌐 GitHub Framework Ingestion
+Using a complex external framework like FastAPI or TailwindCSS? Just paste the public GitHub URL into FlowState's Knowledge Base tab. FlowState will automatically clone the external repository, scan all its architecture, and permanently inject it into your local ChromaDB so your AI Assistant instantly knows exactly how the framework operates.
+
 ### 📋 TODO & FIXME Extractor
 Never lose track of your technical debt. FlowState scans your entire project in milliseconds and gives you a beautiful dashboard of every `TODO:` and `FIXME:` marker you left behind, including the file path and line number.
 
