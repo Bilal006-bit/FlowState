@@ -194,7 +194,11 @@ def extract_project_knowledge(directory: str = "."):
                 memory.add_project_memory(
                     doc_id=doc_id,
                     content=summary,
-                    metadata={"filename": filepath.name, "type": "auto_summary"}
+                    metadata={
+                        "filename": filepath.name, 
+                        "type": "auto_summary",
+                        "project_path": str(target_dir.resolve())
+                    }
                 )
                 print(f"Learned: {filepath.name}")
                 

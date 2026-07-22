@@ -88,6 +88,11 @@ class FlowstateApp(ctk.CTk):
         self.show_frame("kb")
         
     def show_chat(self):
+        projects = self.memory.get_learned_projects()
+        vals = ["All Projects"] + projects
+        self.chat_project_selector.configure(values=vals)
+        if self.chat_project_selector.get() not in vals:
+            self.chat_project_selector.set("All Projects")
         self.show_frame("chat")
         
     def show_settings(self):
@@ -265,7 +270,15 @@ class FlowstateApp(ctk.CTk):
         frame.grid_rowconfigure(1, weight=1)
         self.frames["chat"] = frame
         
-        ctk.CTkLabel(frame, text="Project Chat", font=ctk.CTkFont(size=28, weight="bold")).grid(row=0, column=0, sticky="w", pady=(0, 10))
+        # Top bar with Title and Dropdown
+        top_bar = ctk.CTkFrame(frame, fg_color="transparent")
+        top_bar.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        top_bar.grid_columnconfigure(1, weight=1)
+        
+        ctk.CTkLabel(top_bar, text="Project Chat", font=ctk.CTkFont(size=28, weight="bold")).grid(row=0, column=0, sticky="w")
+        
+        self.chat_project_selector = ctk.CTkOptionMenu(top_bar, values=["All Projects"])
+        self.chat_project_selector.grid(row=0, column=1, sticky="e")
         
         self.chat_display = ctk.CTkTextbox(frame)
         self.chat_display.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
@@ -295,8 +308,10 @@ class FlowstateApp(ctk.CTk):
         self.chat_display.configure(state="disabled")
         self.btn_send_chat.configure(state="disabled")
         
+        selected_project = self.chat_project_selector.get()
+        
         def _bg_chat():
-            response, sources = ask_project_bot(query, self.chat_history)
+            response, sources = ask_project_bot(query, self.chat_history, project_path=selected_project)
             
             # Format sources text
             sources_text = ""

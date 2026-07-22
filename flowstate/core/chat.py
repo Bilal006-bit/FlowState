@@ -1,7 +1,7 @@
 from .memory import MemoryManager
 from .learning import call_llm_api
 
-def ask_project_bot(query: str, history: list) -> str:
+def ask_project_bot(query: str, history: list, project_path: str = None) -> str:
     """
     Combines project context, relevant ChromaDB memories, and chat history 
     into a single prompt, then queries the configured LLM API.
@@ -13,7 +13,8 @@ def ask_project_bot(query: str, history: list) -> str:
         return "⚠️ No API Key configured. Please add one in Settings to use the Chatbot."
         
     # 1. Fetch relevant memory chunks
-    results = memory.query_project_memory_full(query, n_results=5)
+    where_clause = {"project_path": project_path} if project_path and project_path != "All Projects" else None
+    results = memory.query_project_memory_full(query, n_results=5, where=where_clause)
     
     docs = results.get('documents', [[]])[0]
     metas = results.get('metadatas', [[]])[0]

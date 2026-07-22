@@ -96,13 +96,31 @@ class MemoryManager:
         )
         return results.get('documents', [[]])[0]
 
-    def query_project_memory_full(self, query: str, n_results: int = 3) -> dict:
+    def query_project_memory_full(self, query: str, n_results: int = 3, where: dict = None) -> dict:
         """Query project context and return full dictionary (documents, metadatas)."""
         if self.collection.count() == 0:
             return {'documents': [[]], 'metadatas': [[]]}
         
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results
-        )
+        kwargs = {
+            "query_texts": [query],
+            "n_results": n_results
+        }
+        if where:
+            kwargs["where"] = where
+            
+        results = self.collection.query(**kwargs)
         return results
+
+    def get_learned_projects(self) -> list:
+        """Returns a list of all unique project paths learned in ChromaDB."""
+        if self.collection.count() == 0:
+            return []
+            
+        # Get all metadatas
+        data = self.collection.get(include=['metadatas'])
+        projects = set()
+        for metas in data.get('metadatas', []):
+            if metas and 'project_path' in metas:
+                projects.add(metas['project_path'])
+                
+        return sorted(list(projects))
