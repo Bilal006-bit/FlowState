@@ -82,6 +82,46 @@ def call_llm_api(provider: str, api_key: str, prompt: str) -> str:
         raise ValueError(f"Unsupported provider: {provider}")
 
 
+def auto_detect_tech_stack(directory: Path) -> str:
+    """Heuristically detects the tech stack based on project files."""
+    stack = set()
+    
+    # Check Node.js
+    pkg_json = directory / "package.json"
+    if pkg_json.exists():
+        stack.add("Node.js")
+        try:
+            content = pkg_json.read_text(encoding="utf-8").lower()
+            if '"react"' in content: stack.add("React")
+            if '"next"' in content: stack.add("Next.js")
+            if '"vue"' in content: stack.add("Vue")
+            if '"express"' in content: stack.add("Express")
+            if '"typescript"' in content: stack.add("TypeScript")
+            if '"tailwindcss"' in content: stack.add("TailwindCSS")
+        except Exception:
+            pass
+            
+    # Check Python
+    if (directory / "requirements.txt").exists() or (directory / "pyproject.toml").exists():
+        stack.add("Python")
+    elif list(directory.glob("*.py")):
+        stack.add("Python")
+        
+    # Check Go
+    if (directory / "go.mod").exists() or list(directory.glob("*.go")):
+        stack.add("Go")
+        
+    # Check Rust
+    if (directory / "Cargo.toml").exists():
+        stack.add("Rust")
+        
+    # Check Java
+    if (directory / "pom.xml").exists() or (directory / "build.gradle").exists():
+        stack.add("Java")
+        
+    return ", ".join(sorted(stack))
+
+
 def extract_project_knowledge(directory: str = "."):
     """
     Scans the project directory, summarizes the architecture and purpose of key files
@@ -117,6 +157,14 @@ def extract_project_knowledge(directory: str = "."):
                 subprocess.run(["git", "-C", str(target_dir), "pull"], check=True)
             except Exception as e:
                 print(f"Failed to pull latest repository changes: {e}")
+
+    # Adaptive Tech Stack Detection
+    if not profile.tech_stack or not profile.tech_stack.strip():
+        detected_stack = auto_detect_tech_stack(target_dir)
+        if detected_stack:
+            profile.tech_stack = detected_stack
+            memory.update_profile(tech_stack=detected_stack)
+            print(f"Auto-detected Tech Stack: {detected_stack}")
 
     extensions = ['.py', '.js', '.ts', '.tsx', '.jsx', '.md', '.json']
     
