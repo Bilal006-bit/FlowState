@@ -37,7 +37,8 @@ def call_llm_api(provider: str, api_key: str, prompt: str) -> str:
         return res.json()["content"][0]["text"]
         
     elif provider == "gemini":
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+        clean_key = api_key.strip()
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={clean_key}"
         headers = {"Content-Type": "application/json"}
         data = {
             "contents": [{"parts":[{"text": prompt}]}]

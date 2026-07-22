@@ -9,10 +9,24 @@ def get_config_dir() -> Path:
     return config_dir
 
 def get_project_dir() -> Path:
-    """Get the current project's flowstate local directory."""
+    """Get the current project's flowstate local directory and ensure it's gitignored."""
     cwd = Path.cwd()
     project_dir = cwd / ".flowstate"
     project_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Auto-add to .gitignore to prevent cluttering the user's repo
+    gitignore_path = cwd / ".gitignore"
+    ignore_entry = "\n# Flowstate Local Memory\n.flowstate/\n"
+    
+    if gitignore_path.exists():
+        content = gitignore_path.read_text(encoding='utf-8')
+        if ".flowstate" not in content:
+            with open(gitignore_path, "a", encoding='utf-8') as f:
+                f.write(ignore_entry)
+    else:
+        with open(gitignore_path, "w", encoding='utf-8') as f:
+            f.write(ignore_entry)
+            
     return project_dir
 
 DEFAULT_STYLE_PROMPT = """
