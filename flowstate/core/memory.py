@@ -95,3 +95,14 @@ class MemoryManager:
             n_results=n_results
         )
         return results.get('documents', [[]])[0]
+
+    def query_project_memory_full(self, query: str, n_results: int = 3) -> dict:
+        """Query project context and return full dictionary (documents, metadatas)."""
+        if self.collection.count() == 0:
+            return {'documents': [[]], 'metadatas': [[]]}
+        
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=n_results
+        )
+        return results

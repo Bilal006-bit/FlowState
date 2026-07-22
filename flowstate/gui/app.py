@@ -296,14 +296,21 @@ class FlowstateApp(ctk.CTk):
         self.btn_send_chat.configure(state="disabled")
         
         def _bg_chat():
-            response = ask_project_bot(query, self.chat_history)
+            response, sources = ask_project_bot(query, self.chat_history)
+            
+            # Format sources text
+            sources_text = ""
+            if sources:
+                sources_text = "\n\n*(Sources retrieved: " + ", ".join(sources) + ")*"
+                
+            full_response = response + sources_text
             
             # Update history
             self.chat_history.append({"role": "User", "message": query})
-            self.chat_history.append({"role": "FlowState", "message": response})
+            self.chat_history.append({"role": "FlowState", "message": full_response})
             
             self.chat_display.configure(state="normal")
-            self.chat_display.insert("end", f"FlowState: {response}\n\n")
+            self.chat_display.insert("end", f"FlowState: {full_response}\n\n")
             self.chat_display.see("end")
             self.chat_display.configure(state="disabled")
             self.btn_send_chat.configure(state="normal")
@@ -326,12 +333,12 @@ class FlowstateApp(ctk.CTk):
         
         # Provider
         ctk.CTkLabel(frame, text="LLM API Provider:").grid(row=2, column=0, sticky="w", pady=10, padx=10)
-        self.entry_provider = ctk.CTkOptionMenu(frame, values=["openai", "anthropic", "gemini"])
+        self.entry_provider = ctk.CTkOptionMenu(frame, values=["openai", "anthropic", "gemini", "ollama"])
         self.entry_provider.set(self.profile.api_provider or "openai")
         self.entry_provider.grid(row=2, column=1, sticky="ew", pady=10)
         
         # API Key
-        ctk.CTkLabel(frame, text="API Key:").grid(row=3, column=0, sticky="w", pady=10, padx=10)
+        ctk.CTkLabel(frame, text="API Key / Ollama Model (e.g. llama3):").grid(row=3, column=0, sticky="w", pady=10, padx=10)
         self.entry_key = ctk.CTkEntry(frame, show="*")
         self.entry_key.grid(row=3, column=1, sticky="ew", pady=10)
         self.entry_key.insert(0, self.profile.api_key or "")

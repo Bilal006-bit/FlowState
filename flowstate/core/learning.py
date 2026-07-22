@@ -66,6 +66,18 @@ def call_llm_api(provider: str, api_key: str, prompt: str) -> str:
             raise Exception(f"{res.status_code} Client Error: {res.text}")
         return res.json()["candidates"][0]["content"]["parts"][0]["text"]
         
+    elif provider == "ollama":
+        model_name = api_key.strip() or "llama3"
+        url = "http://localhost:11434/api/generate"
+        data = {
+            "model": model_name,
+            "prompt": prompt,
+            "stream": False
+        }
+        res = requests.post(url, json=data)
+        res.raise_for_status()
+        return res.json().get("response", "")
+        
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -114,6 +126,10 @@ def extract_project_knowledge(directory: str = "."):
         if filepath.is_file() and filepath.suffix in extensions:
             # Ignore hidden directories like .git or .flowstate
             if any(part.startswith('.') for part in filepath.parts[:-1]):
+                continue
+            # Ignore common build and dependency directories
+            ignore_dirs = {"node_modules", "dist", "build", "venv", "env", "__pycache__"}
+            if any(part in ignore_dirs for part in filepath.parts[:-1]):
                 continue
                 
             try:

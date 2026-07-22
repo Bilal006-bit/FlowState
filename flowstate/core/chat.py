@@ -13,8 +13,17 @@ def ask_project_bot(query: str, history: list) -> str:
         return "⚠️ No API Key configured. Please add one in Settings to use the Chatbot."
         
     # 1. Fetch relevant memory chunks
-    results = memory.query_project_memory(query, n_results=5)
+    results = memory.query_project_memory_full(query, n_results=5)
     
+    docs = results.get('documents', [[]])[0]
+    metas = results.get('metadatas', [[]])[0]
+    
+    sources = []
+    if metas:
+        for m in metas:
+            if m and 'filename' in m:
+                sources.append(m['filename'])
+                
     # 2. Build the system context
     context = (
         "You are FlowState, an expert AI developer assistant that deeply understands the user's specific project.\n"
@@ -24,10 +33,10 @@ def ask_project_bot(query: str, history: list) -> str:
         f"Style Guidelines: {profile.style_prompt or 'Not specified'}\n\n"
     )
     
-    if results:
+    if docs:
         context += "### Relevant Codebase Memories:\n"
-        for i, res in enumerate(results):
-            context += f"--- Memory {i+1} ---\n{res}\n\n"
+        for i, doc in enumerate(docs):
+            context += f"--- Memory {i+1} ---\n{doc}\n\n"
             
     # 3. Append Chat History
     if history:
@@ -44,6 +53,7 @@ def ask_project_bot(query: str, history: list) -> str:
     # 5. Call the API
     try:
         response = call_llm_api(profile.api_provider, profile.api_key, context)
-        return response
+        
+        return response, sources
     except Exception as e:
-        return f"⚠️ API Error: {str(e)}"
+        return f"⚠️ API Error: {str(e)}", []
