@@ -11,6 +11,7 @@ from ..core.watcher import start_watching
 from ..core.learning import extract_project_knowledge, generate_optimized_context, generate_smart_changelog
 from ..core.packer import pack_codebase
 from ..core.tasks import extract_todos
+from ..core.chat import ask_project_bot
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -27,6 +28,7 @@ class FlowstateApp(ctk.CTk):
         self.repo = get_repo()
         
         self.watcher_thread = None
+        self.chat_history = []
         
         # Grid layout (1 row, 2 columns)
         self.grid_rowconfigure(0, weight=1)
@@ -35,7 +37,7 @@ class FlowstateApp(ctk.CTk):
         # --- Sidebar ---
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(5, weight=1)
+        self.sidebar_frame.grid_rowconfigure(6, weight=1)
         
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Flowstate", font=ctk.CTkFont(size=24, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -49,8 +51,11 @@ class FlowstateApp(ctk.CTk):
         self.nav_kb = ctk.CTkButton(self.sidebar_frame, text="Knowledge Base", command=self.show_kb)
         self.nav_kb.grid(row=3, column=0, padx=20, pady=10)
         
+        self.nav_chat = ctk.CTkButton(self.sidebar_frame, text="Project Chat", command=self.show_chat)
+        self.nav_chat.grid(row=4, column=0, padx=20, pady=10)
+        
         self.nav_settings = ctk.CTkButton(self.sidebar_frame, text="Settings", command=self.show_settings)
-        self.nav_settings.grid(row=4, column=0, padx=20, pady=10)
+        self.nav_settings.grid(row=5, column=0, padx=20, pady=10)
         
         # --- Main Frame ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -61,6 +66,7 @@ class FlowstateApp(ctk.CTk):
         self.setup_dashboard()
         self.setup_tasks()
         self.setup_kb()
+        self.setup_chat()
         self.setup_settings()
         
         self.show_dashboard()
@@ -80,6 +86,9 @@ class FlowstateApp(ctk.CTk):
         
     def show_kb(self):
         self.show_frame("kb")
+        
+    def show_chat(self):
+        self.show_frame("chat")
         
     def show_settings(self):
         self.show_frame("settings")
@@ -214,6 +223,7 @@ class FlowstateApp(ctk.CTk):
         self.entry_learn_dir.pack(side="left", padx=(0, 10))
         self.entry_learn_dir.insert(0, ".")
         
+        ctk.CTkButton(input_frame, text="Browse...", width=80, command=self.action_browse_dir).pack(side="left", padx=(0, 10))
         ctk.CTkButton(input_frame, text="Run Automated API Learning", command=self.action_run_learning).pack(side="left")        
         self.kb_text = ctk.CTkTextbox(frame, height=300)
         self.kb_text.grid(row=2, column=0, sticky="ew", pady=10)
@@ -241,6 +251,64 @@ class FlowstateApp(ctk.CTk):
     def action_copy_context(self):
         context = self.kb_text.get("0.0", "end")
         pyperclip.copy(context)
+        
+    def action_browse_dir(self):
+        directory = filedialog.askdirectory(title="Select Directory to Learn")
+        if directory:
+            self.entry_learn_dir.delete(0, "end")
+            self.entry_learn_dir.insert(0, directory)
+
+    # --- Chat View ---
+    def setup_chat(self):
+        frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_rowconfigure(1, weight=1)
+        self.frames["chat"] = frame
+        
+        ctk.CTkLabel(frame, text="Project Chat", font=ctk.CTkFont(size=28, weight="bold")).grid(row=0, column=0, sticky="w", pady=(0, 10))
+        
+        self.chat_display = ctk.CTkTextbox(frame)
+        self.chat_display.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
+        self.chat_display.insert("0.0", "Welcome to Project Chat! Ask me anything about your codebase.\n\n")
+        self.chat_display.configure(state="disabled")
+        
+        input_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        input_frame.grid(row=2, column=0, sticky="ew")
+        input_frame.grid_columnconfigure(0, weight=1)
+        
+        self.chat_input = ctk.CTkEntry(input_frame, placeholder_text="Type your question here...")
+        self.chat_input.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        self.chat_input.bind("<Return>", lambda event: self.action_send_chat())
+        
+        self.btn_send_chat = ctk.CTkButton(input_frame, text="Send", width=80, command=self.action_send_chat)
+        self.btn_send_chat.grid(row=0, column=1)
+
+    def action_send_chat(self):
+        query = self.chat_input.get().strip()
+        if not query: return
+        
+        self.chat_input.delete(0, "end")
+        
+        self.chat_display.configure(state="normal")
+        self.chat_display.insert("end", f"You: {query}\n")
+        self.chat_display.see("end")
+        self.chat_display.configure(state="disabled")
+        self.btn_send_chat.configure(state="disabled")
+        
+        def _bg_chat():
+            response = ask_project_bot(query, self.chat_history)
+            
+            # Update history
+            self.chat_history.append({"role": "User", "message": query})
+            self.chat_history.append({"role": "FlowState", "message": response})
+            
+            self.chat_display.configure(state="normal")
+            self.chat_display.insert("end", f"FlowState: {response}\n\n")
+            self.chat_display.see("end")
+            self.chat_display.configure(state="disabled")
+            self.btn_send_chat.configure(state="normal")
+            
+        threading.Thread(target=_bg_chat, daemon=True).start()
 
     # --- Settings View ---
     def setup_settings(self):
