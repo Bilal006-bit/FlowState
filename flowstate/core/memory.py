@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from sqlalchemy import create_engine, Column, Integer, String, Text
+from sqlalchemy import create_engine, Column, Integer, String, Text, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 import chromadb
@@ -20,8 +20,10 @@ class UserProfile(Base):
     email = Column(String, default="developer@example.com")
     style_prompt = Column(Text, default="")
     theme = Column(String, default="dark")
-    api_provider = Column(String, default="openai")  # openai, anthropic, gemini
+    api_provider = Column(String, default="openai")  # openai, anthropic, gemini, ollama
     api_key = Column(String, default="")
+    fallback_api_provider = Column(String, default="gemini")
+    fallback_api_key = Column(String, default="")
     tech_stack = Column(Text, default="Python")
     tokens_saved = Column(Integer, default=0)
     comments_minimized = Column(Integer, default=0)
@@ -34,6 +36,15 @@ class MemoryManager:
         self.global_db_path = get_config_dir() / "flowstate.db"
         self.engine = create_engine(f"sqlite:///{self.global_db_path}")
         Base.metadata.create_all(self.engine)
+        
+        # Safely migrate existing DB
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE user_profile ADD COLUMN fallback_api_provider TEXT DEFAULT 'gemini'"))
+                conn.execute(text("ALTER TABLE user_profile ADD COLUMN fallback_api_key TEXT DEFAULT ''"))
+        except Exception:
+            pass
+            
         self.Session = sessionmaker(bind=self.engine)
         
         # Setup ChromaDB for Per-Project semantic memory
@@ -53,7 +64,9 @@ class MemoryManager:
             return profile
 
     def update_profile(self, name: str=None, email: str=None, style_prompt: str=None, 
-                       api_provider: str=None, api_key: str=None, tech_stack: str=None) -> None:
+                       api_provider: str=None, api_key: str=None, 
+                       fallback_api_provider: str=None, fallback_api_key: str=None,
+                       tech_stack: str=None) -> None:
         with self.Session() as session:
             profile = session.query(UserProfile).first()
             if not profile:
@@ -64,6 +77,8 @@ class MemoryManager:
             if style_prompt is not None: profile.style_prompt = style_prompt
             if api_provider is not None: profile.api_provider = api_provider
             if api_key is not None: profile.api_key = api_key
+            if fallback_api_provider is not None: profile.fallback_api_provider = fallback_api_provider
+            if fallback_api_key is not None: profile.fallback_api_key = fallback_api_key
             if tech_stack is not None: profile.tech_stack = tech_stack
             session.commit()
             

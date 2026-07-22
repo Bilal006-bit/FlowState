@@ -32,7 +32,10 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
         "```file:/absolute/path/to/file.js\n"
         "// full updated code here\n"
         "```\n"
-        f"The root directory of the active project is: {project_path or 'Unknown'}\n\n"
+        "The system will automatically intercept this block and either overwrite the existing file or create a NEW file on the user's hard drive.\n"
+        f"The root directory of the active project is: {project_path or 'Unknown (use absolute paths from the context)'}\n"
+        "Always use exact absolute paths.\n"
+        "SECURITY CONSTRAINT: NEVER hardcode API keys, passwords, or credentials in source code. You MUST ALWAYS create or update a `.env` file and instruct the code to load from environment variables.\n\n"
         "### Project Context\n"
         f"Tech Stack: {profile.tech_stack or 'Not specified'}\n"
         f"Style Guidelines: {profile.style_prompt or 'Not specified'}\n\n"
@@ -80,23 +83,36 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
     try:
         response = call_llm_api(profile.api_provider, profile.api_key, context)
         
-        # 6. Agentic Interceptor
-        pattern = r'```file:(.*?)\n(.*?)```'
-        matches = re.finditer(pattern, response, re.DOTALL)
-        
-        for match in matches:
-            file_path = match.group(1).strip()
-            new_content = match.group(2)
+        # Detect AI Refusals
+        lower_res = response.lower()
+        if "i'm not capable" in lower_res or "i cannot" in lower_res or "i am not able" in lower_res or "as an ai" in lower_res:
+            raise Exception("AI Refusal Detected")
             
-            try:
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(new_content)
-                
-                # Replace the massive codeblock in the UI with a success badge
-                response = response.replace(match.group(0), f"\n✅ **Automatically updated file:** `{file_path}`\n")
-            except Exception as e:
-                response = response.replace(match.group(0), f"\n❌ **Failed to update file:** `{file_path}`\nError: {e}\n")
-        
-        return response, sources
     except Exception as e:
-        return f"⚠️ API Error: {str(e)}", []
+        print(f"Primary API Failed: {e}. Trying fallback...")
+        if profile.fallback_api_provider and profile.fallback_api_key:
+            try:
+                response = call_llm_api(profile.fallback_api_provider, profile.fallback_api_key, context)
+            except Exception as fallback_e:
+                return f"⚠️ Primary & Fallback API Error: {str(fallback_e)}", []
+        else:
+            return f"⚠️ API Error: {str(e)}", []
+            
+    # 6. Agentic Interceptor
+    pattern = r'```file:(.*?)\n(.*?)```'
+    matches = re.finditer(pattern, response, re.DOTALL)
+    
+    for match in matches:
+        file_path = match.group(1).strip()
+        new_content = match.group(2)
+        
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            
+            # Replace the massive codeblock in the UI with a success badge
+            response = response.replace(match.group(0), f"\n✅ **Automatically updated file:** `{file_path}`\n")
+        except Exception as e:
+            response = response.replace(match.group(0), f"\n❌ **Failed to update file:** `{file_path}`\nError: {e}\n")
+    
+    return response, sources

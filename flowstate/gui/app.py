@@ -359,14 +359,34 @@ class FlowstateApp(ctk.CTk):
         self.entry_key.grid(row=3, column=1, sticky="ew", pady=10)
         self.entry_key.insert(0, self.profile.api_key or "")
         
-        ctk.CTkButton(frame, text="Save Settings", command=self.save_settings).grid(row=4, column=0, columnspan=2, pady=20)
+        # Fallback Provider
+        ctk.CTkLabel(frame, text="Fallback API Provider:").grid(row=4, column=0, sticky="w", pady=10, padx=10)
+        self.entry_fallback_provider = ctk.CTkOptionMenu(frame, values=["openai", "anthropic", "gemini", "ollama"])
+        self.entry_fallback_provider.set(self.profile.fallback_api_provider or "gemini")
+        self.entry_fallback_provider.grid(row=4, column=1, sticky="ew", pady=10)
+        
+        # Fallback API Key
+        ctk.CTkLabel(frame, text="Fallback API Key:").grid(row=5, column=0, sticky="w", pady=10, padx=10)
+        self.entry_fallback_key = ctk.CTkEntry(frame, show="*")
+        self.entry_fallback_key.grid(row=5, column=1, sticky="ew", pady=10)
+        self.entry_fallback_key.insert(0, self.profile.fallback_api_key or "")
+        
+        ctk.CTkButton(frame, text="Save Settings", command=self.save_settings).grid(row=6, column=0, columnspan=2, pady=20)
 
     def save_settings(self):
         stack = self.entry_stack.get()
         provider = self.entry_provider.get()
         key = self.entry_key.get()
+        fb_provider = self.entry_fallback_provider.get()
+        fb_key = self.entry_fallback_key.get()
         
-        self.memory.update_profile(tech_stack=stack, api_provider=provider, api_key=key)
+        self.memory.update_profile(
+            tech_stack=stack, 
+            api_provider=provider, 
+            api_key=key, 
+            fallback_api_provider=fb_provider, 
+            fallback_api_key=fb_key
+        )
         self.profile = self.memory.get_profile()
         self.refresh_kb_view()
 
