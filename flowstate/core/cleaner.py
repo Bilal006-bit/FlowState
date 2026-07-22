@@ -52,10 +52,10 @@ def clean_python_comments(source_code: str) -> str:
 
     return "\n".join(cleaned_lines)
 
-def clean_file(filepath: Path) -> bool:
-    """Read a file, clean comments based on extension, and overwrite."""
+def clean_file(filepath: Path) -> tuple[bool, int]:
+    """Read a file, clean comments based on extension, and overwrite. Returns (changed, lines_removed)."""
     if not filepath.exists() or not filepath.is_file():
-        return False
+        return False, 0
         
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -74,7 +74,8 @@ def clean_file(filepath: Path) -> bool:
         cleaned = pattern.sub(repl, content)
         
     if cleaned != content:
+        lines_removed = len(content.split('\n')) - len(cleaned.split('\n'))
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(cleaned)
-        return True
-    return False
+        return True, max(0, lines_removed)
+    return False, 0

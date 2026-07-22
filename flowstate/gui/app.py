@@ -5,10 +5,12 @@ from tkinter import filedialog
 from pathlib import Path
 
 from ..core.memory import MemoryManager
-from ..core.git_utils import get_repo, get_current_branch
+from ..core.git_utils import get_repo, get_current_branch, get_diff
 from ..core.cleaner import clean_file
 from ..core.watcher import start_watching
-from ..core.learning import extract_project_knowledge, generate_optimized_context
+from ..core.learning import extract_project_knowledge, generate_optimized_context, generate_smart_changelog
+from ..core.packer import pack_codebase
+from ..core.tasks import extract_todos
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -18,7 +20,7 @@ class FlowstateApp(ctk.CTk):
         super().__init__()
         
         self.title("Flowstate v1.0")
-        self.geometry("900x600")
+        self.geometry("1000x700")
         
         self.memory = MemoryManager()
         self.profile = self.memory.get_profile()
@@ -33,7 +35,7 @@ class FlowstateApp(ctk.CTk):
         # --- Sidebar ---
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(4, weight=1)
+        self.sidebar_frame.grid_rowconfigure(5, weight=1)
         
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Flowstate", font=ctk.CTkFont(size=24, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -41,11 +43,14 @@ class FlowstateApp(ctk.CTk):
         self.nav_dash = ctk.CTkButton(self.sidebar_frame, text="Dashboard", command=self.show_dashboard)
         self.nav_dash.grid(row=1, column=0, padx=20, pady=10)
         
+        self.nav_tasks = ctk.CTkButton(self.sidebar_frame, text="Tasks & TODOs", command=self.show_tasks)
+        self.nav_tasks.grid(row=2, column=0, padx=20, pady=10)
+        
         self.nav_kb = ctk.CTkButton(self.sidebar_frame, text="Knowledge Base", command=self.show_kb)
-        self.nav_kb.grid(row=2, column=0, padx=20, pady=10)
+        self.nav_kb.grid(row=3, column=0, padx=20, pady=10)
         
         self.nav_settings = ctk.CTkButton(self.sidebar_frame, text="Settings", command=self.show_settings)
-        self.nav_settings.grid(row=3, column=0, padx=20, pady=10)
+        self.nav_settings.grid(row=4, column=0, padx=20, pady=10)
         
         # --- Main Frame ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -54,6 +59,7 @@ class FlowstateApp(ctk.CTk):
         
         self.frames = {}
         self.setup_dashboard()
+        self.setup_tasks()
         self.setup_kb()
         self.setup_settings()
         
@@ -67,6 +73,10 @@ class FlowstateApp(ctk.CTk):
     def show_dashboard(self):
         self.update_dashboard_stats()
         self.show_frame("dashboard")
+        
+    def show_tasks(self):
+        self.refresh_tasks()
+        self.show_frame("tasks")
         
     def show_kb(self):
         self.show_frame("kb")
@@ -98,41 +108,95 @@ class FlowstateApp(ctk.CTk):
         
         # Actions
         actions_frame = ctk.CTkFrame(frame, fg_color="transparent")
-        actions_frame.grid(row=2, column=0, sticky="ew")
+        actions_frame.grid(row=2, column=0, sticky="ew", pady=10)
         
-        ctk.CTkButton(actions_frame, text="Clean File (Remove AI Fluff)", command=self.action_clean_file).pack(side="left", padx=10)
-        self.btn_watch = ctk.CTkButton(actions_frame, text="Start Daemon Watcher", command=self.action_toggle_watcher, fg_color="green")
-        self.btn_watch.pack(side="left", padx=10)
+        ctk.CTkButton(actions_frame, text="Clean File", command=self.action_clean_file).pack(side="left", padx=10)
+        ctk.CTkButton(actions_frame, text="Pack Codebase (Copy)", command=self.action_pack_codebase).pack(side="left", padx=10)
+        ctk.CTkButton(actions_frame, text="Generate Changelog", command=self.action_changelog).pack(side="left", padx=10)
         
+        self.btn_watch = ctk.CTkButton(actions_frame, text="Start Watcher Daemon", command=self.action_toggle_watcher, fg_color="green")
+        self.btn_watch.pack(side="right", padx=10)
+        
+        self.dash_log = ctk.CTkTextbox(frame, height=200)
+        self.dash_log.grid(row=3, column=0, sticky="ew", pady=20)
+        self.dash_log.insert("0.0", "Welcome to Flowstate Phase 2.\n")
+        
+    def log_msg(self, msg):
+        self.dash_log.insert("end", f"{msg}\n")
+        self.dash_log.see("end")
+
     def update_dashboard_stats(self):
         branch = get_current_branch(self.repo)
         is_dirty = self.repo.is_dirty(untracked_files=True)
         
-        # Refresh profile
         self.profile = self.memory.get_profile()
-        
         self.stat_branch.configure(text=f"Branch: \n{branch}")
-        self.stat_minimized.configure(text=f"Files Cleaned: \n{self.profile.comments_minimized}")
+        self.stat_minimized.configure(text=f"Lines Cleaned: \n{self.profile.comments_minimized}")
         self.stat_changes.configure(text=f"Pending Changes: \n{'Yes' if is_dirty else 'No'}")
 
     def action_clean_file(self):
         filepath = filedialog.askopenfilename(title="Select File to Clean")
         if filepath:
-            changed = clean_file(Path(filepath))
+            changed, lines_removed = clean_file(Path(filepath))
             if changed:
-                self.memory.increment_stat("comments_minimized")
+                self.memory.increment_stat("comments_minimized", lines_removed)
                 self.update_dashboard_stats()
-                # Simple popup via print for now
-                print(f"Cleaned {filepath}!")
+                self.log_msg(f"Cleaned {lines_removed} lines from {Path(filepath).name}!")
+            else:
+                self.log_msg(f"No excessive AI comments found in {Path(filepath).name}.")
+
+    def action_pack_codebase(self):
+        self.log_msg("Packing codebase... (ignoring hidden and build folders)")
+        packed = pack_codebase(".")
+        pyperclip.copy(packed)
+        self.log_msg(f"Successfully packed {len(packed)} characters and copied to clipboard!")
+        
+    def action_changelog(self):
+        self.log_msg("Analyzing git diff for smart changelog...")
+        diff = get_diff(self.repo)
+        if not diff.strip():
+            self.log_msg("No git differences found against HEAD.")
+            return
+            
+        def _bg():
+            clog = generate_smart_changelog(diff)
+            pyperclip.copy(clog)
+            self.log_msg("Generated Changelog and copied to clipboard:\n" + clog)
+            
+        threading.Thread(target=_bg, daemon=True).start()
 
     def action_toggle_watcher(self):
         if self.watcher_thread and self.watcher_thread.is_alive():
-            # In a real app we'd signal it to stop
-            print("Watcher already running. (Cannot stop cleanly without OS signals in v1)")
+            self.log_msg("Watcher is already running.")
         else:
             self.watcher_thread = threading.Thread(target=start_watching, args=(".",), daemon=True)
             self.watcher_thread.start()
             self.btn_watch.configure(text="Watcher Active", fg_color="gray")
+            self.log_msg("Active Watcher Daemon started. It will now intercept saves.")
+
+    # --- Tasks View ---
+    def setup_tasks(self):
+        frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        frame.grid_columnconfigure(0, weight=1)
+        self.frames["tasks"] = frame
+        
+        ctk.CTkLabel(frame, text="Project Technical Debt", font=ctk.CTkFont(size=28, weight="bold")).grid(row=0, column=0, sticky="w", pady=(0, 20))
+        
+        self.tasks_textbox = ctk.CTkTextbox(frame, height=450)
+        self.tasks_textbox.grid(row=1, column=0, sticky="ew", pady=10)
+        
+    def refresh_tasks(self):
+        todos = extract_todos(".")
+        self.tasks_textbox.delete("0.0", "end")
+        if not todos:
+            self.tasks_textbox.insert("0.0", "No TODOs or FIXMEs found in the project! You're clean.")
+            return
+            
+        report = f"Found {len(todos)} active tasks in the codebase:\n\n"
+        for t in todos:
+            report += f"[{t['type']}] {t['file']}:{t['line']} -> {t['text']}\n"
+            
+        self.tasks_textbox.insert("0.0", report)
 
     # --- Knowledge Base View ---
     def setup_kb(self):
@@ -161,9 +225,6 @@ class FlowstateApp(ctk.CTk):
             success = extract_project_knowledge()
             if success:
                 self.refresh_kb_view()
-                print("Learning completed.")
-            else:
-                print("Learning failed or litellm not available/configured.")
         threading.Thread(target=_learn, daemon=True).start()
         
     def action_copy_context(self):
@@ -205,7 +266,6 @@ class FlowstateApp(ctk.CTk):
         
         self.memory.update_profile(tech_stack=stack, api_provider=provider, api_key=key)
         self.profile = self.memory.get_profile()
-        print("Settings Saved!")
         self.refresh_kb_view()
 
 def run_app():

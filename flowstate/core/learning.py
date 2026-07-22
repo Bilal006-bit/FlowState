@@ -37,7 +37,7 @@ def call_llm_api(provider: str, api_key: str, prompt: str) -> str:
         return res.json()["content"][0]["text"]
         
     elif provider == "gemini":
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
         data = {
             "contents": [{"parts":[{"text": prompt}]}]
@@ -110,7 +110,26 @@ def generate_optimized_context() -> str:
     results = memory.query_project_memory("Architecture and core logic", n_results=5)
     if results:
         context += "\n## Project Memory (Flowstate)\n"
-        for idx, res in enumerate(results):
-            context += f"{idx+1}. {res}\n"
             
     return context
+
+def generate_smart_changelog(diff_text: str) -> str:
+    """Uses the configured API to summarize a git diff into a professional changelog."""
+    memory = MemoryManager()
+    profile = memory.get_profile()
+    
+    if not profile.api_key:
+        return "No API key configured for smart changelogs. Please add one in Settings."
+        
+    prompt = (
+        "You are an expert engineer writing a pull request changelog.\n"
+        "Summarize the following git diff into a professional markdown changelog with bullet points.\n"
+        "Focus on the 'why' and group by feature/bugfix if possible.\n\n"
+        f"Diff:\n{diff_text[:10000]}"
+    )
+    
+    try:
+        changelog = call_llm_api(profile.api_provider, profile.api_key, prompt)
+        return changelog
+    except Exception as e:
+        return f"Failed to generate changelog: {e}"

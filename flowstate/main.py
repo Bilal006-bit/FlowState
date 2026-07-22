@@ -1,6 +1,6 @@
 import typer
 from rich.console import Console
-from .cli import start, style, clean, commit, finish, status, watch, ui
+from .cli import start, style, clean, commit, finish, status, watch, ui, pack, todos
 
 app = typer.Typer(help="Flowstate: The local-first developer flow manager.")
 console = Console()
@@ -13,6 +13,8 @@ app.add_typer(finish.app, name="finish", help="Finish your session and generate 
 app.add_typer(status.app, name="status", help="View your Flowstate status")
 app.add_typer(watch.app, name="watch", help="Run the autonomous background daemon")
 app.add_typer(ui.app, name="ui", help="Launch the Flowstate Desktop GUI")
+app.add_typer(pack.app, name="pack", help="Pack codebase into one string for LLM context")
+app.add_typer(todos.app, name="todos", help="Extract all TODO/FIXME comments across the project")
 
 if __name__ == "__main__":
     app()

@@ -24,7 +24,8 @@ def start_session(ticket: str = typer.Argument(..., help="The ticket number or d
     console.print(f"[cyan]Loaded profile for:[/cyan] {profile.name}")
     
     # 3. Create a session notes file
-    notes_file = Path(f"SESSION_{branch_name}.md")
+    safe_filename = branch_name.replace("/", "-").replace("\\", "-")
+    notes_file = Path(f"SESSION_{safe_filename}.md")
     if not notes_file.exists():
         notes_file.write_text(f"# Session: {ticket}\n\n## Goals\n- \n\n## AI Context\n- \n")
         console.print(f"[cyan]Created session notes:[/cyan] {notes_file.name}")
