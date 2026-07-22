@@ -210,7 +210,7 @@ class FlowstateApp(ctk.CTk):
         input_frame.grid(row=1, column=0, sticky="ew", pady=10)
         
         ctk.CTkLabel(input_frame, text="Directory to learn:").pack(side="left", padx=(0, 10))
-        self.entry_learn_dir = ctk.CTkEntry(input_frame, width=200, placeholder_text="e.g. . or src/")
+        self.entry_learn_dir = ctk.CTkEntry(input_frame, width=350, placeholder_text="e.g. src/ or https://github.com/user/repo")
         self.entry_learn_dir.pack(side="left", padx=(0, 10))
         self.entry_learn_dir.insert(0, ".")
         

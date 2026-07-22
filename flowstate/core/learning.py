@@ -1,6 +1,8 @@
 import os
 import json
 import requests
+import subprocess
+from urllib.parse import urlparse
 from pathlib import Path
 
 from .memory import MemoryManager
@@ -81,6 +83,29 @@ def extract_project_knowledge(directory: str = "."):
         return False
         
     target_dir = Path(directory)
+    if directory.startswith("http://") or directory.startswith("https://"):
+        path = urlparse(directory).path
+        repo_name = path.strip('/').split('/')[-1]
+        if repo_name.endswith('.git'):
+            repo_name = repo_name[:-4]
+            
+        target_dir = Path.cwd() / ".flowstate" / "external_repos" / repo_name
+        
+        if not target_dir.exists():
+            print(f"Cloning external repository {repo_name}...")
+            target_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                subprocess.run(["git", "clone", directory, str(target_dir)], check=True)
+            except Exception as e:
+                print(f"Failed to clone repository: {e}")
+                return False
+        else:
+            print(f"External repository {repo_name} already cloned. Pulling latest...")
+            try:
+                subprocess.run(["git", "-C", str(target_dir), "pull"], check=True)
+            except Exception as e:
+                print(f"Failed to pull latest repository changes: {e}")
+
     extensions = ['.py', '.js', '.ts', '.tsx', '.jsx', '.md', '.json']
     
     print(f"Starting automated learning using {profile.api_provider}...")
