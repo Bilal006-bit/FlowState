@@ -206,8 +206,15 @@ class FlowstateApp(ctk.CTk):
         
         ctk.CTkLabel(frame, text="Knowledge Base & Learning", font=ctk.CTkFont(size=28, weight="bold")).grid(row=0, column=0, sticky="w", pady=(0, 20))
         
-        ctk.CTkButton(frame, text="Run Automated API Learning", command=self.action_run_learning).grid(row=1, column=0, sticky="w", pady=10)
+        input_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        input_frame.grid(row=1, column=0, sticky="ew", pady=10)
         
+        ctk.CTkLabel(input_frame, text="Directory to learn:").pack(side="left", padx=(0, 10))
+        self.entry_learn_dir = ctk.CTkEntry(input_frame, width=200, placeholder_text="e.g. . or src/")
+        self.entry_learn_dir.pack(side="left", padx=(0, 10))
+        self.entry_learn_dir.insert(0, ".")
+        
+        ctk.CTkButton(input_frame, text="Run Automated API Learning", command=self.action_run_learning).pack(side="left")        
         self.kb_text = ctk.CTkTextbox(frame, height=300)
         self.kb_text.grid(row=2, column=0, sticky="ew", pady=10)
         
@@ -221,8 +228,12 @@ class FlowstateApp(ctk.CTk):
         self.kb_text.insert("0.0", context)
         
     def action_run_learning(self):
+        target_dir = self.entry_learn_dir.get().strip()
+        if not target_dir:
+            target_dir = "."
+            
         def _learn():
-            success = extract_project_knowledge()
+            success = extract_project_knowledge(target_dir)
             if success:
                 self.refresh_kb_view()
         threading.Thread(target=_learn, daemon=True).start()
