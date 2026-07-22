@@ -185,12 +185,30 @@ def extract_project_knowledge(directory: str = "."):
                 if len(content.strip()) == 0:
                     continue
                     
+                doc_id = str(filepath.resolve())
+                
+                # Check if file is already in memory to save API calls / time
+                existing = memory.collection.get(ids=[doc_id])
+                if existing and existing.get('ids') and len(existing['ids']) > 0:
+                    summary = existing['documents'][0]
+                    new_meta = existing['metadatas'][0] if existing.get('metadatas') and existing['metadatas'] else {}
+                    new_meta["filename"] = filepath.name
+                    new_meta["type"] = "auto_summary"
+                    new_meta["project_path"] = str(target_dir.resolve())
+                    
+                    memory.add_project_memory(
+                        doc_id=doc_id,
+                        content=summary,
+                        metadata=new_meta
+                    )
+                    print(f"Skipped API (Already learned): {filepath.name}")
+                    continue
+                    
                 prompt = f"Summarize the architectural purpose, tech stack usage, and key functions of this file ({filepath.name}) in 3-4 concise sentences:\n\n{content[:5000]}"
                 
                 summary = call_llm_api(profile.api_provider, profile.api_key, prompt)
                 
                 # Store in ChromaDB
-                doc_id = str(filepath.resolve())
                 memory.add_project_memory(
                     doc_id=doc_id,
                     content=summary,
