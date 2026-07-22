@@ -79,7 +79,7 @@ class MemoryManager:
         """Add context/memory specific to this project."""
         if metadata is None:
             metadata = {}
-        self.collection.add(
+        self.collection.upsert(
             documents=[content],
             metadatas=[metadata],
             ids=[doc_id]
