@@ -28,11 +28,12 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
     context = (
         "You are FlowState, an expert AI developer.\n"
         "Your task is to answer the user's questions and write code based on the Project Context below.\n"
-        "If you need to modify or create a file, you MUST output the completely updated code inside a special code block exactly like this:\n"
-        "```file:/absolute/path/to/file.js\n"
+        "If you need to modify or create a file, you MUST output the completely updated code inside a code block. The VERY FIRST LINE inside the block MUST be a comment containing the exact absolute file path. Example:\n"
+        "```javascript\n"
+        "// filepath: /absolute/path/to/file.js\n"
         "// full updated code here\n"
         "```\n"
-        "The system will automatically intercept this block and either overwrite the existing file or create a NEW file on the user's hard drive.\n"
+        "The system will automatically intercept this block and write it to the user's hard drive.\n"
         f"The root directory of the active project is: {project_path or 'Unknown (use absolute paths from the context)'}\n"
         "Always use exact absolute paths.\n"
         "SECURITY CONSTRAINT: NEVER hardcode API keys, passwords, or credentials in source code. You MUST ALWAYS create or update a `.env` file and instruct the code to load from environment variables.\n\n"
@@ -77,7 +78,7 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
             
     # 4. Append the new user query
     context += f"\n### New User Request:\n{query}\n\n"
-    context += "Please provide an expert answer. If asked to modify a file, use the ```file:PATH format."
+    context += "Please provide an expert answer. If modifying a file, ensure the first line of the code block is `// filepath: ABSOLUTE_PATH`."
 
     # 5. Call the API
     try:
@@ -98,21 +99,32 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
         else:
             return f"⚠️ API Error: {str(e)}", []
             
-    # 6. Agentic Interceptor
-    pattern = r'```file:(.*?)\n(.*?)```'
+    # 6. Agentic Interceptor (Resilient Parser for Small Models)
+    pattern = r'```[a-zA-Z]*\n(.*?)```'
     matches = re.finditer(pattern, response, re.DOTALL)
     
     for match in matches:
-        file_path = match.group(1).strip()
-        new_content = match.group(2)
+        block_content = match.group(1).strip()
+        lines = block_content.split('\n')
+        if not lines: continue
         
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(new_content)
+        first_line = lines[0].strip()
+        # Look for a path in the first line (supports Windows C:\ and Unix /)
+        path_match = re.search(r'(?:filepath|file|path)?:?\s*([A-Za-z]:[\\/]\S+|/[A-Za-z0-9_./-]+)', first_line, re.IGNORECASE)
+        
+        if path_match:
+            file_path = path_match.group(1).strip()
+            new_content = '\n'.join(lines[1:])
             
-            # Replace the massive codeblock in the UI with a success badge
-            response = response.replace(match.group(0), f"\n✅ **Automatically updated file:** `{file_path}`\n")
-        except Exception as e:
-            response = response.replace(match.group(0), f"\n❌ **Failed to update file:** `{file_path}`\nError: {e}\n")
+            try:
+                # Ensure directory exists for new files
+                Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+                
+                # Replace the massive codeblock in the UI with a success badge
+                response = response.replace(match.group(0), f"\n✅ **Automatically updated file:** `{file_path}`\n")
+            except Exception as e:
+                response = response.replace(match.group(0), f"\n❌ **Failed to update file:** `{file_path}`\nError: {e}\n")
     
     return response, sources
