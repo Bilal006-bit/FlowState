@@ -176,8 +176,12 @@ def extract_project_knowledge(directory: str = "."):
             if any(part.startswith('.') for part in filepath.parts[:-1]):
                 continue
             # Ignore common build and dependency directories
-            ignore_dirs = {"node_modules", "dist", "build", "venv", "env", "__pycache__"}
+            ignore_dirs = {"node_modules", "dist", "build", "venv", "env", "__pycache__", ".git", ".flowstate"}
             if any(part in ignore_dirs for part in filepath.parts[:-1]):
+                continue
+                
+            # Ignore lockfiles and binary-like json
+            if filepath.name in {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "Contents.json"}:
                 continue
                 
             try:

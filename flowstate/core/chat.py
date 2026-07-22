@@ -26,24 +26,20 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
     
     # 2. Build the system context
     context = (
-        "You are FlowState, an autonomous AI agent running locally on the user's machine.\n"
-        "You have the power to read, edit, and update the user's files based on their commands.\n"
-        "You answer questions, write code, and propose features specifically tailored to the project architecture below.\n\n"
-        "CRITICAL INSTRUCTION FOR EDITING FILES:\n"
-        "If you need to modify a file or write new code based on the user's request, you MUST output the completely rewritten file enclosed in a special code block exactly like this:\n"
-        "```file:ABSOLUTE_PATH\n"
-        "<full updated code here>\n"
+        "You are FlowState, an expert AI developer.\n"
+        "Your task is to answer the user's questions and write code based on the Project Context below.\n"
+        "If you need to modify or create a file, you MUST output the completely updated code inside a special code block exactly like this:\n"
+        "```file:/absolute/path/to/file.js\n"
+        "// full updated code here\n"
         "```\n"
-        "The system will automatically intercept this block and either overwrite the existing file or create a NEW file on the user's hard drive.\n"
-        f"The root directory of the active project is: {project_path or 'Unknown (use absolute paths from the context)'}\n"
-        "Always use exact absolute paths.\n\n"
+        f"The root directory of the active project is: {project_path or 'Unknown'}\n\n"
         "### Project Context\n"
         f"Tech Stack: {profile.tech_stack or 'Not specified'}\n"
         f"Style Guidelines: {profile.style_prompt or 'Not specified'}\n\n"
     )
     
     if docs:
-        context += "### Relevant Codebase Memories & Raw Files:\n"
+        context += "### Relevant Codebase Files:\n"
         for i, meta in enumerate(metas):
             filename = meta.get('filename', f'File {i+1}')
             if meta and 'filename' in meta:
@@ -54,13 +50,14 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
             raw_code = ""
             if ids and i < len(ids):
                 filepath = ids[i]
-                try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        raw_code = f.read()
-                        if len(raw_code) > 3000:
-                            raw_code = raw_code[:3000] + "\n... (truncated)"
-                except Exception:
-                    raw_code = ""
+                if not filepath.endswith('lock.json') and not filepath.endswith('.lock') and not filepath.endswith('Contents.json'):
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            raw_code = f.read()
+                            if len(raw_code) > 2500:
+                                raw_code = raw_code[:2500] + "\n... (truncated)"
+                    except Exception:
+                        raw_code = ""
             
             if raw_code:
                 context += f"--- {filename} (Raw Code) (Path: {ids[i]}) ---\n{raw_code}\n\n"
@@ -76,8 +73,8 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
             context += f"[{role}]: {msg}\n"
             
     # 4. Append the new user query
-    context += f"\n### New User Question:\n{query}\n\n"
-    context += "Please provide a concise, expert answer or modify the files as requested."
+    context += f"\n### New User Request:\n{query}\n\n"
+    context += "Please provide an expert answer. If asked to modify a file, use the ```file:PATH format."
 
     # 5. Call the API
     try:
