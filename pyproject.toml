@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowstate"
+version = "1.0.0"
+description = "A lightweight, local-first developer flow manager for AI coding tools."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Developer", email = "developer@example.com" }
+]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "GitPython>=3.1.30",
+    "SQLAlchemy>=2.0.0",
+    "chromadb>=0.4.0",
+    "watchdog>=3.0.0",
+    "pyperclip>=1.8.2",
+    "plyer>=2.1.0",
+    "customtkinter>=5.2.0",
+    "requests>=2.28.0",
+]
+
+[project.scripts]
+flowstate = "flowstate.main:app"
+
+[tool.setuptools.packages.find]
+include = ["flowstate*"]

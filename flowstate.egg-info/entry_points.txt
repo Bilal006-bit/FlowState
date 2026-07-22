@@ -1,0 +1,2 @@
+[console_scripts]
+flowstate = flowstate.main:app
