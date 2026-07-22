@@ -44,7 +44,24 @@ def call_llm_api(provider: str, api_key: str, prompt: str) -> str:
             "contents": [{"parts":[{"text": prompt}]}]
         }
         res = requests.post(url, headers=headers, json=data)
-        res.raise_for_status()
+        
+        # Smart Fallback for Internal/Experimental Keys that lack public models
+        if res.status_code == 404:
+            try:
+                models_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={clean_key}"
+                models_res = requests.get(models_url).json()
+                for m in models_res.get("models", []):
+                    if "generateContent" in m.get("supportedGenerationMethods", []):
+                        fallback_model = m["name"]
+                        fallback_url = f"https://generativelanguage.googleapis.com/v1beta/{fallback_model}:generateContent?key={clean_key}"
+                        res = requests.post(fallback_url, headers=headers, json=data)
+                        if res.status_code == 200:
+                            break
+            except Exception:
+                pass
+
+        if res.status_code != 200:
+            raise Exception(f"{res.status_code} Client Error: {res.text}")
         return res.json()["candidates"][0]["content"]["parts"][0]["text"]
         
     else:
