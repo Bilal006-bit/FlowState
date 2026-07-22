@@ -1,31 +1,33 @@
 # FlowState 🌊
 
-FlowState is a **local-first, privacy-focused open-source developer flow manager** designed specifically for engineers who heavily use AI coding tools (like Cursor, Claude Desktop, and ChatGPT). 
+FlowState is an **autonomous, privacy-first local AI agent** and developer workflow manager. Designed for engineers scaling their productivity, FlowState transforms your desktop into an intelligent pair programmer that actively cleans technical debt, writes code, and compresses codebase context to save massively on API tokens.
 
-It acts as an active "Junior Engineer" running in the background, automatically cleaning up AI hallucinations, managing your technical debt, and compressing your codebase context to save you massive amounts of API tokens.
+FlowState runs locally on your machine, giving it the authority to act as an actual "Junior Engineer" capable of editing your files autonomously without you ever copy-pasting code again.
 
-## 🚀 Features
+---
 
-### 🧹 The Auto-Cleaner (Anti-Hallucination)
-AI tools love to write huge, unnecessary comments explaining every line of code. FlowState intercepts your saves in real-time. Whenever you hit `Ctrl+S`, FlowState instantly strips out the hallucinated AI fluff in milliseconds, keeping your git history and codebase perfectly clean.
+## 🚀 Key Capabilities
 
-### 🧠 Auto-Context Optimizer (Token Saver)
-Stop wasting money and context windows by pasting unoptimized code. FlowState maintains a local ChromaDB vector memory of your project architecture. Every time you save, it silently recalculates the absolute smallest, perfectly optimized context block and can copy it to your clipboard.
+### 🧠 Autonomous Agentic Editing
+FlowState features an advanced, built-in Project Chatbot that serves as an autonomous agent. When you ask it to build a feature or fix a bug, it silently reads your raw files, generates the perfect code, and **physically writes/overwrites the files directly to your hard drive**. 
 
-### 📦 The Codebase Packer
-Working on a complex architectural bug? Run `flowstate pack` (or click a button in the UI). FlowState will recursively read your entire project, ignore junk like `.git` and `node_modules`, format it beautifully, and copy it to your clipboard so you can feed it to Claude instantly.
+### 🛡️ Multi-AI Fallback Router
+Experience the speed and privacy of local models with the raw intelligence of enterprise cloud models. FlowState includes an internal intelligent routing engine. If your primary local model (e.g., `ollama`) crashes, times out, or throws an AI refusal for complex tasks, FlowState silently and instantly reroutes the prompt to a Fallback Provider (e.g., `gemini`, `openai`, `anthropic`).
 
-### 🤖 Local Project AI Chatbot
-Stop copying and pasting files to ChatGPT. FlowState features a built-in Chat tab that intuitively knows your entire codebase. When you ask it a question (e.g., "how does the login work?" or "write a new user dashboard"), it silently searches your project's local ChromaDB, pulls the exact architectural files, injects your tech stack and style guidelines, and gives you a perfectly tailored answer using your configured API.
+### 🔒 Enterprise `.env` Security Standard
+The AI Agent is hardcoded with strict security constraints. It is forbidden from hardcoding API keys, passwords, or database URIs into your source code. When requested to add credentials, it automatically generates a secure `.env` file and correctly configures environment variables, enforcing professional Senior Developer standards.
 
-### 🌐 GitHub Framework Ingestion
-Using a complex external framework like FastAPI or TailwindCSS? Just paste the public GitHub URL into FlowState's Knowledge Base tab. FlowState will automatically clone the external repository, scan all its architecture, and permanently inject it into your local ChromaDB so your AI Assistant instantly knows exactly how the framework operates.
+### 🧹 The Auto-Cleaner Daemon (Anti-Hallucination)
+AI tools love to write huge, unnecessary comments explaining every line of code. FlowState intercepts your saves in real-time. Whenever you hit `Ctrl+S`, the Watcher Daemon instantly strips out hallucinated AI fluff in milliseconds, keeping your git history and codebase perfectly clean.
 
-### 📋 TODO & FIXME Extractor
-Never lose track of your technical debt. FlowState scans your entire project in milliseconds and gives you a beautiful dashboard of every `TODO:` and `FIXME:` marker you left behind, including the file path and line number.
+### 📦 Auto-Context Optimizer (Token Saver)
+Stop wasting money and context windows. FlowState maintains a local ChromaDB vector memory of your project's architecture. It auto-detects your tech stack (e.g., React, Python, Go) and silently recalculates the absolute smallest, perfectly optimized context block when asked a question, keeping API costs to an absolute minimum.
+
+### 🌐 External Framework Ingestion
+Using a complex external framework like FastAPI or TailwindCSS? Paste the public GitHub URL into FlowState's Knowledge Base. FlowState automatically clones the repository, scans its architecture, and permanently injects it into your local memory so your AI Assistant instantly becomes an expert on the framework.
 
 ### 📝 Smart Git Changelog
-Stop writing PR descriptions manually. FlowState analyzes your `git diff` against the main branch and uses your configured LLM API (OpenAI, Anthropic, or Gemini) to write a stunning, markdown-formatted changelog detailing the "why" and "how" of your code.
+Stop writing PR descriptions manually. FlowState analyzes your `git diff` against the main branch and uses your configured LLM API to write a stunning, markdown-formatted changelog detailing the "why" and "how" of your code changes.
 
 ---
 
@@ -53,7 +55,7 @@ Run this command from anywhere in your terminal to open the FlowState Dashboard:
 ```bash
 flowstate ui
 ```
-*From the UI, you can manage your settings, run the Auto-Cleaner daemon, pack your codebase, and view your project's technical debt.*
+*From the UI, you can manage your Settings, interact with the Autonomous Chatbot, run the Auto-Cleaner daemon, pack your codebase, and view your project's technical debt.*
 
 ### The CLI Commands
 - `flowstate watch` - Starts the active background daemon to auto-clean files on save.
@@ -61,8 +63,6 @@ flowstate ui
 - `flowstate todos` - Extracts and displays all TODOs in the terminal.
 - `flowstate style` - Copies your custom AI coding style prompt to your clipboard.
 - `flowstate clean <file>` - Manually strips AI fluff from a specific file.
-- `flowstate start <branch-name>` - Initializes a smart git branch and session notes.
-- `flowstate finish` - Generates a PR description.
 
 ---
 
