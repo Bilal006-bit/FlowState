@@ -18,12 +18,7 @@ def clean_python_comments(source_code: str) -> str:
     except SyntaxError:
         return source_code  # Fallback if there's a syntax error
     
-    # We will just use regex to strip out excessive # comments that span more than 3 lines.
-    # AI often generates blocks like:
-    # # This function does X
-    # # It takes Y
-    # # It returns Z
-    # # ...
+    # We will just use regex to strip out excessive # comments that span more than 3 lines. ... [Flowstate: AI comments truncated]
     
     lines = source_code.split('\n')
     cleaned_lines = []
@@ -79,3 +74,42 @@ def clean_file(filepath: Path) -> tuple[bool, int]:
             f.write(cleaned)
         return True, max(0, lines_removed)
     return False, 0
+
+def analyze_file(filepath: Path) -> list[str]:
+    """Non-destructively analyze a file and return a list of recommendations."""
+    recommendations = []
+    if not filepath.exists() or not filepath.is_file():
+        return recommendations
+        
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        # 1. Check for AI fluff
+        if filepath.suffix == '.py':
+            cleaned = clean_python_comments(content)
+        else:
+            pattern = re.compile(r'/\*.*?\*/', re.DOTALL)
+            def repl(match):
+                text = match.group(0)
+                if text.count('\n') > 3:
+                    return "/* [Flowstate: AI comments truncated] */"
+                return text
+            cleaned = pattern.sub(repl, content)
+            
+        if cleaned != content:
+            lines_removed = len(content.split('\n')) - len(cleaned.split('\n'))
+            recommendations.append(f"AI Fluff Detected: {lines_removed} lines of redundant comments found. Ask Project Chat to clean it.")
+            
+        # 2. Check for Ravioli code (Redundant/Duplicate functions) - heuristic
+        if filepath.suffix == '.py':
+            funcs = re.findall(r'^def (\w+)\(', content, re.MULTILINE)
+            duplicates = set([f for f in funcs if funcs.count(f) > 1])
+            if duplicates:
+                for d in duplicates:
+                    recommendations.append(f"Ravioli Code Warning: The function '{d}' appears to be duplicated.")
+                    
+    except Exception:
+        pass
+        
+    return recommendations

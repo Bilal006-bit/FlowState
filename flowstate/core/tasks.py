@@ -1,5 +1,7 @@
 import re
+import json
 from pathlib import Path
+from .config import get_config_dir
 
 def extract_todos(directory: str = ".") -> list[dict]:
     """
@@ -42,4 +44,46 @@ def extract_todos(directory: str = ".") -> list[dict]:
         except Exception:
             pass
             
+    # Append FlowState Advisory Recommendations
+    advisories = get_recommendations()
+    tasks.extend(advisories)
+            
+    return tasks
+
+def get_recommendations_file() -> Path:
+    return get_config_dir() / "recommendations.json"
+
+def add_recommendations(filepath: str, recs: list[str]):
+    rec_file = get_recommendations_file()
+    data = {}
+    if rec_file.exists():
+        try:
+            data = json.loads(rec_file.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+            
+    if not recs and filepath in data:
+        del data[filepath]
+    elif recs:
+        data[filepath] = recs
+    
+    with open(rec_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2)
+
+def get_recommendations() -> list[dict]:
+    rec_file = get_recommendations_file()
+    tasks = []
+    if rec_file.exists():
+        try:
+            data = json.loads(rec_file.read_text(encoding='utf-8'))
+            for fp, recs in data.items():
+                for r in recs:
+                    tasks.append({
+                        'type': 'ADVISORY',
+                        'text': r,
+                        'file': Path(fp).name,
+                        'line': '?'
+                    })
+        except Exception:
+            pass
     return tasks

@@ -33,22 +33,25 @@ class FlowstateEventHandler(FileSystemEventHandler):
             if now - self.last_clean_time < 2:
                 return
                 
-            # 1. Active Action: Auto-Clean
-            changed, lines_removed = clean_file(path)
-            if changed:
-                self.last_clean_time = time.time()
-                self.memory.increment_stat("comments_minimized", lines_removed)
-                log_event(f"🧹 [Auto-Cleaner] Stripped {lines_removed} lines of AI fluff from {path.name}")
+            # 1. Non-Destructive Action: Code Advisory
+            try:
+                from .cleaner import analyze_file
+                recommendations = analyze_file(path)
+                from .tasks import add_recommendations
+                add_recommendations(str(path.resolve()), recommendations)
                 
-                # Notify User
-                try:
-                    notification.notify(
-                        title="Flowstate: AI Fluff Removed",
-                        message=f"Automatically stripped {lines_removed} lines of hallucinated comments from {path.name}",
-                        timeout=3
-                    )
-                except Exception:
-                    pass
+                if recommendations:
+                    log_event(f"💡 [Advisor] Found {len(recommendations)} recommendations for {path.name}")
+                    try:
+                        notification.notify(
+                            title="Flowstate Advisor",
+                            message=f"Found {len(recommendations)} recommendations for {path.name}. Check Tasks tab.",
+                            timeout=3
+                        )
+                    except Exception:
+                        pass
+            except Exception as e:
+                log_event(f"Error in Advisor: {e}")
             
             # 2. Active Action: Auto-Context Update
             # Quietly update the clipboard with optimized context so it's always ready to paste
@@ -74,7 +77,7 @@ def start_watching(path: str = "."):
     observer.start()
     
     log_event(f"👁️  [Watcher Daemon] Started monitoring {Path(path).resolve()}")
-    log_event("✓ Anti-Hallucination Auto-Cleaner: ENABLED")
+    log_event("✓ Non-Destructive Advisory Mode: ENABLED")
     log_event("✓ Silent Real-Time Learning: ENABLED")
     print("Press Ctrl+C to stop.")
     
