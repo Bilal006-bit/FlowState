@@ -38,7 +38,7 @@ class FlowstateApp(ctk.CTk):
         # --- Sidebar ---
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(7, weight=1)
+        self.sidebar_frame.grid_rowconfigure(8, weight=1)
         
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Flowstate", font=ctk.CTkFont(size=24, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -60,6 +60,9 @@ class FlowstateApp(ctk.CTk):
         
         self.nav_logs = ctk.CTkButton(self.sidebar_frame, text="System Logs", command=self.show_logs)
         self.nav_logs.grid(row=6, column=0, padx=20, pady=10)
+        
+        self.nav_new_window = ctk.CTkButton(self.sidebar_frame, text="Open New Window", command=self.action_new_window, fg_color="transparent", border_width=1, border_color="gray")
+        self.nav_new_window.grid(row=7, column=0, padx=20, pady=10)
         
         # --- Main Frame ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -148,6 +151,14 @@ class FlowstateApp(ctk.CTk):
     def log_msg(self, msg):
         self.dash_log.insert("end", f"{msg}\n")
         self.dash_log.see("end")
+
+    def action_new_window(self):
+        import subprocess
+        try:
+            subprocess.Popen(["flowstate", "ui"], shell=True)
+            self.log_msg("Launched new independent window for another project!")
+        except Exception as e:
+            self.log_msg(f"Failed to launch new window: {e}")
 
     def update_dashboard_stats(self):
         branch = get_current_branch(self.repo)
