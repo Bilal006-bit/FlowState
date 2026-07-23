@@ -230,6 +230,39 @@ def extract_project_knowledge(directory: str = "."):
     print("Memory Enrichment Complete!")
     return True
 
+def extract_and_store_file(filepath: Path, target_dir: Path) -> bool:
+    """Extract and store knowledge for a single file. (Used for Real-Time Silent Learning)"""
+    from .memory import MemoryManager
+    memory = MemoryManager()
+    profile = memory.get_profile()
+    if not profile.api_key:
+        return False
+        
+    try:
+        content = filepath.read_text(encoding='utf-8')
+        if len(content.strip()) == 0:
+            return False
+            
+        doc_id = str(filepath.resolve())
+        prompt = f"Summarize the architectural purpose, tech stack usage, and key functions of this file ({filepath.name}) in 3-4 concise sentences:\n\n{content[:5000]}"
+        
+        summary = call_llm_api(profile.api_provider, profile.api_key, prompt)
+        
+        memory.add_project_memory(
+            doc_id=doc_id,
+            content=summary,
+            metadata={
+                "filename": filepath.name, 
+                "type": "auto_summary",
+                "project_path": str(target_dir.resolve())
+            }
+        )
+        print(f"[Silent Watcher] Real-time memory updated for {filepath.name}")
+        return True
+    except Exception as e:
+        print(f"Failed to learn {filepath.name}: {e}")
+        return False
+
 def generate_optimized_context() -> str:
     """Combines ChromaDB learnings and tech stack into a single prompt block."""
     memory = MemoryManager()

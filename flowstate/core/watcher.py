@@ -11,10 +11,11 @@ from .learning import generate_optimized_context
 from .memory import MemoryManager
 
 class FlowstateEventHandler(FileSystemEventHandler):
-    def __init__(self):
+    def __init__(self, root_path: Path):
         super().__init__()
         self.memory = MemoryManager()
         self.last_clean_time = 0
+        self.root_path = root_path
 
     def on_modified(self, event):
         if event.is_directory:
@@ -55,11 +56,18 @@ class FlowstateEventHandler(FileSystemEventHandler):
                 pyperclip.copy(context)
             except Exception:
                 pass
+                
+            # 3. Silent Action: Real-time Learning
+            try:
+                from .learning import extract_and_store_file
+                extract_and_store_file(path, self.root_path)
+            except Exception:
+                pass
 
 
 def start_watching(path: str = "."):
     """Start the background daemon to actively manage flow state."""
-    event_handler = FlowstateEventHandler()
+    event_handler = FlowstateEventHandler(root_path=Path(path).resolve())
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
@@ -67,6 +75,7 @@ def start_watching(path: str = "."):
     print(f"Active Flowstate daemon watching {Path(path).resolve()}...")
     print("Anti-Hallucination Auto-Cleaner: ENABLED")
     print("Auto-Context Optimizer: ENABLED")
+    print("Memory Enrichment Complete!")
     print("Press Ctrl+C to stop.")
     
     try:

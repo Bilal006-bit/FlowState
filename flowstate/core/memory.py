@@ -8,7 +8,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 import chromadb
 from chromadb.config import Settings
 
-from .config import get_config_dir, get_project_dir
+from .config import get_config_dir
 
 Base = declarative_base()
 
@@ -47,8 +47,8 @@ class MemoryManager:
             
         self.Session = sessionmaker(bind=self.engine)
         
-        # Setup ChromaDB for Per-Project semantic memory
-        self.project_chroma_path = get_project_dir() / "chroma_db"
+        # Setup ChromaDB for Per-Project semantic memory (Centralized safely in ~/.flowstate)
+        self.project_chroma_path = get_config_dir() / "chroma_db"
         self.chroma_client = chromadb.PersistentClient(path=str(self.project_chroma_path))
         self.collection = self.chroma_client.get_or_create_collection(name="project_memory")
 
