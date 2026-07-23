@@ -257,10 +257,12 @@ def extract_and_store_file(filepath: Path, target_dir: Path) -> bool:
                 "project_path": str(target_dir.resolve())
             }
         )
-        print(f"[Silent Watcher] Real-time memory updated for {filepath.name}")
+        from .config import log_event
+        log_event(f"🧠 [Silent Learning] Real-time memory updated for {filepath.name}")
         return True
     except Exception as e:
-        print(f"Failed to learn {filepath.name}: {e}")
+        from .config import log_event
+        log_event(f"❌ [Silent Learning] Failed to learn {filepath.name}: {e}")
         return False
 
 def generate_optimized_context() -> str:

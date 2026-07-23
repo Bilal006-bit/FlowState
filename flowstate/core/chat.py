@@ -90,7 +90,8 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
             raise Exception("AI Refusal Detected")
             
     except Exception as e:
-        print(f"Primary API Failed: {e}. Trying fallback...")
+        from .config import log_event
+        log_event(f"⚠️ [Fallback Router] Primary API Failed: {e}. Routing to fallback...")
         if profile.fallback_api_provider and profile.fallback_api_key:
             try:
                 response = call_llm_api(profile.fallback_api_provider, profile.fallback_api_key, context)
@@ -122,9 +123,14 @@ def ask_project_bot(query: str, history: list, project_path: str = None) -> tupl
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(new_content)
                 
+                from .config import log_event
+                log_event(f"✅ [Agentic Auto-Editor] Automatically updated file: {file_path}")
+                
                 # Replace the massive codeblock in the UI with a success badge
                 response = response.replace(match.group(0), f"\n✅ **Automatically updated file:** `{file_path}`\n")
             except Exception as e:
+                from .config import log_event
+                log_event(f"❌ [Agentic Auto-Editor] Failed to update file: {file_path} - Error: {e}")
                 response = response.replace(match.group(0), f"\n❌ **Failed to update file:** `{file_path}`\nError: {e}\n")
     
     return response, sources

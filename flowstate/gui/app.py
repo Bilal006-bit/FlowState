@@ -12,6 +12,7 @@ from ..core.learning import extract_project_knowledge, generate_optimized_contex
 from ..core.packer import pack_codebase
 from ..core.tasks import extract_todos
 from ..core.chat import ask_project_bot
+from ..core.config import get_config_dir
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -37,7 +38,7 @@ class FlowstateApp(ctk.CTk):
         # --- Sidebar ---
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(6, weight=1)
+        self.sidebar_frame.grid_rowconfigure(7, weight=1)
         
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Flowstate", font=ctk.CTkFont(size=24, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -57,6 +58,9 @@ class FlowstateApp(ctk.CTk):
         self.nav_settings = ctk.CTkButton(self.sidebar_frame, text="Settings", command=self.show_settings)
         self.nav_settings.grid(row=5, column=0, padx=20, pady=10)
         
+        self.nav_logs = ctk.CTkButton(self.sidebar_frame, text="System Logs", command=self.show_logs)
+        self.nav_logs.grid(row=6, column=0, padx=20, pady=10)
+        
         # --- Main Frame ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.main_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
@@ -69,6 +73,7 @@ class FlowstateApp(ctk.CTk):
         self.setup_kb()
         self.setup_chat()
         self.setup_settings()
+        self.setup_logs()
         
         self.show_dashboard()
 
@@ -98,6 +103,10 @@ class FlowstateApp(ctk.CTk):
         
     def show_settings(self):
         self.show_frame("settings")
+        
+    def show_logs(self):
+        self.refresh_logs()
+        self.show_frame("logs")
 
     # --- Dashboard View ---
     def setup_dashboard(self):
@@ -389,6 +398,57 @@ class FlowstateApp(ctk.CTk):
         )
         self.profile = self.memory.get_profile()
         self.refresh_kb_view()
+
+    # --- System Logs View ---
+    def setup_logs(self):
+        frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_rowconfigure(1, weight=1)
+        self.frames["logs"] = frame
+        
+        ctk.CTkLabel(frame, text="System Logs", font=ctk.CTkFont(size=28, weight="bold")).grid(row=0, column=0, sticky="w", pady=(0, 20))
+        
+        self.logs_display = ctk.CTkTextbox(frame, font=ctk.CTkFont(family="Consolas", size=13))
+        self.logs_display.grid(row=1, column=0, sticky="nsew", pady=10)
+        
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_frame.grid(row=2, column=0, sticky="ew", pady=10)
+        ctk.CTkButton(btn_frame, text="Clear Logs", command=self.action_clear_logs).pack(side="right")
+        
+        # Start auto-refresh loop
+        self.refresh_logs()
+        
+    def refresh_logs(self):
+        log_file = get_config_dir() / "flowstate.log"
+        if log_file.exists():
+            try:
+                with open(log_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                
+                # Only update if changed to prevent annoying scroll jumps
+                current = self.logs_display.get("0.0", "end").strip()
+                if content.strip() != current:
+                    self.logs_display.delete("0.0", "end")
+                    self.logs_display.insert("0.0", content)
+                    self.logs_display.see("end")
+            except Exception:
+                pass
+        else:
+            self.logs_display.delete("0.0", "end")
+            self.logs_display.insert("0.0", "No logs recorded yet. Start watching a folder or chatting!")
+            
+        # Re-schedule every 2000ms
+        self.after(2000, self.refresh_logs)
+        
+    def action_clear_logs(self):
+        log_file = get_config_dir() / "flowstate.log"
+        if log_file.exists():
+            try:
+                with open(log_file, "w", encoding="utf-8") as f:
+                    f.write("")
+                self.logs_display.delete("0.0", "end")
+            except Exception:
+                pass
 
 def run_app():
     app = FlowstateApp()

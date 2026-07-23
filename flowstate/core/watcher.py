@@ -9,6 +9,7 @@ from plyer import notification
 from .cleaner import clean_file
 from .learning import generate_optimized_context
 from .memory import MemoryManager
+from .config import log_event
 
 class FlowstateEventHandler(FileSystemEventHandler):
     def __init__(self, root_path: Path):
@@ -37,7 +38,7 @@ class FlowstateEventHandler(FileSystemEventHandler):
             if changed:
                 self.last_clean_time = time.time()
                 self.memory.increment_stat("comments_minimized", lines_removed)
-                print(f"[Active Watcher] Cleaned {lines_removed} lines of AI fluff from {path.name}")
+                log_event(f"🧹 [Auto-Cleaner] Stripped {lines_removed} lines of AI fluff from {path.name}")
                 
                 # Notify User
                 try:
@@ -72,10 +73,9 @@ def start_watching(path: str = "."):
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
     
-    print(f"Active Flowstate daemon watching {Path(path).resolve()}...")
-    print("Anti-Hallucination Auto-Cleaner: ENABLED")
-    print("Auto-Context Optimizer: ENABLED")
-    print("Memory Enrichment Complete!")
+    log_event(f"👁️  [Watcher Daemon] Started monitoring {Path(path).resolve()}")
+    log_event("✓ Anti-Hallucination Auto-Cleaner: ENABLED")
+    log_event("✓ Silent Real-Time Learning: ENABLED")
     print("Press Ctrl+C to stop.")
     
     try:
